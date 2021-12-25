@@ -82,12 +82,14 @@ systemctl status vsftpd.service
 systemctl restart vsftpd.service
 ```
 当服务正常启动后就可以通过客户端进行连接了：  
+
 **Windows 进行ftp连接:**
 ![windows](resources/imgs/3.png "windows 连接ftp服务")
+
 **其他Linux机器连接ftp服务：**  
 ![Linux](resources/imgs/4.png "linux 连接ftp服务")
 
-<font color=red>注意: </font>  
+**注意：如果只是想简单使用`ftp`服务，而不怎么在意安全问题，那么简易版就行了，但是若想使用更安全的ftp服务或者更精细化的控制用户权限，比如只允许上传或者只允许下载等，可以细化配置。下面要介绍的精修版就是精细控制的一个例子**
 
 ## 2. 精修版
 ### 2.1 修改配置文件 vsftpd.conf
@@ -125,12 +127,42 @@ pasv_address=10.0.110.21
 # 禁止 user_list 文件中的用户登录
 userlist_enable=YES
 tcp_wrappers=YES
+# 启用虚拟账号，guest和anonymous在功能和形式上都有很多相似之处，但是guest要更安全，因为guest登录需要账号密码，而anonymous谁的都可登录
 guest_enable=YES
+# 添加PAM权限认证
 pam_service_name=/etc/pam.d/vsftpd
+# 虚拟账号
 guest_username=vsftpd
+# 配置虚拟账号和本地账号具有相同权限
 virtual_use_local_privs=YES
+# 用户配置目录
 user_config_dir=/etc/vsftpd/ftplogin
 allow_writeable_chroot=YES
 ```
-
+## 2.2 创建虚拟账号
+在上述配置文件 `vsftpd.conf`中配置的虚拟账号是`vsftpd`，因此在启动`vsftpd`服务前，我们需要事先创建该账号
+```shell
+useradd vsftpd -d /home/vsftpd -s /sbin/nologin
+```
+## 2.3 PAM配置
+**在配置文件中指定了配置项`pam_service_name=/etc/pam.d/vsftpd`，对登录用户需要进行PAM认证**
+### 2.3.1 创建虚拟用户数据库
+```shell
+# 先创建文件 /etc/vsftpd/login.txt，并在文件中加入登录用户信息，奇数行为用户名，偶数行为用户密码，创建好后使用如下命令生成虚拟数据库文件 /etc/vsftpd/login.db
+db_load -T -t hash -f /etc/vsftpd/login.txt /etc/vsftpd/login.db
+# 修改权限
+chmod 600 /etc/vsftpd/login.db
+# 数据库文件生成后，为安全起见，可以将 login.txt 删除
+rm -f /etc/vsftpd/login.txt
+```
+### 2.3.2 修改/etc/pam.d/vsftpd 配置
+在文件`/etc/pam.d/vsftpd`中加入如下内容：
+```shell
+auth    required        pam_userdb.so db=/etc/vsftpd/login
+account required        pam_userdb.so db=/etc/vsftpd/login
+```
+## 2.4 启动vsftpd服务
+```shell
+systemctl start vsftpd.service
+```
 ![image](https://img9.doubanio.com/view/photo/l/public/p2554525534.webp "海蒂与爷爷")  
