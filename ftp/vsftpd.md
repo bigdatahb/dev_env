@@ -78,7 +78,12 @@ vi /etc/vsftpd/vuser_conf/up
 # 在up文件中加入如下内容：
 local_root=/data/vsftpd/upload
 write_enable=YES
+
 download_enable=NO
+# 创建目录 /data/vsftpd/upload
+mkdir /data/vsftpd/upload
+# 修改目录归属
+chown -R vsftpd. /data/vsftpd/upload
 ```
 # 5 防火墙配置
 添加端口
@@ -91,7 +96,26 @@ firewall-cmd --reload
 ```shell
 firewall-cmd --list-ports
 ```
-# 6. 启动服务
+# 6. SELINUX配置
+## 6.1 临时关闭SELINUX
+```shell
+setenforce 0
+```
+## 6.2 永久关闭SELINIX
+修改配置文件 `/etc/sysconfig/selinux`，将`SELINUX`配置项修改为 `SELINUX=disabled`， 重启操作系统
+
+# 7. 启动服务
 ```shell
 systemctl start vsftpd.service
 ```
+# 8. 测试账号
+## 8.1 测试只能上传不能下载的账号
+![image](https://user-images.githubusercontent.com/51871609/147489219-7fe78def-66a2-4f86-b3e1-5a4201db4400.png)
+## 8.2 测试只能下载不能上传的账号
+```shell
+# 配置账号 down, 创建文件 /etc/vsftpd/vuser_conf/down , 并写入如下内容
+local_root=/data/vsftpd/download
+write_enable=NO
+download_enable=YES
+```
+![image](https://user-images.githubusercontent.com/51871609/147489624-2bfcb907-be84-4376-ba77-1589f8cabc6b.png)
