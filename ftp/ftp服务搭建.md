@@ -218,7 +218,32 @@ chmod g+rx /home/lisimeng
 **如下图所示，即使`lisimeng`对目录`/data/lisimeng`具有完全权限，但是也不能切换过去：**
 ![image](resources/imgs/11.png "change directory")
 **配置`chroot_list`文件，将`lisimeng`加入进去，一个用户名占用一行，再连接`ftp`，这次就可以切换目录啦,并且首次登录进入的目录也能正确显示：**
-![image](resouces/imgs/12.png "chroot_list")
+![image](resources/imgs/12.png "chroot_list")
 
-**默认情况下，vsftpd 会使用`/etc/pam.d/vsftpd`文件，该文件默认要求`ftp`用户的`shell`是`/etc/shell`文件中列出的`shell`之一且`ftp`用户没有在`/etc/vsftpd/ftpusers`中**
+### 2.6.2 测试shell不在/etc/shells中的用户
+安装一个机器上没有的shell , tcsh， 如果机器上有除了 sh , bash 之外的其他shell，不用安装也行，其他的shell还有很多：ksh, zsh, ash 等
+![image](resources/imgs/13.png "install tcsh")
+```shell
+# 新建用户 ftp1 , 并指定登录 shell 为 tcsh
+useradd ftp1 -d /home/ftp1 -s /bin/tcsh
+# 查看 /etc/shells 文件，发现文件中多了两行: /bin/tcsh 和 /bin/csh, 我们注释掉 /bin/tcsh ， 即在这一行前面加上一个 '#' , 然后用 ftp1这个用户去连接ftp服务器
+```
+![login_error](resources/imgs/14.png "login incorrect")
+**去掉`/etc/shells`文件中的注释, 即放开 `/bin/tcsh` 这一行, 再进行`ftp`登录**
+![login](resources/imgs/15.png "ftp1 login success")
+**可以发现将`ftp1`的登录`shell`加入到`/etc/shells`文件中之后，便可以正常登录了，这里`ls`命令还有问题(出现错误：226 Transfer done (but failed to open directory).)是因为 `SELINUX` 处于开启状态, 可以使用通过命令`setenforce 0`来临时关闭`SELINUX`或者修改文件`/etc/sysconfig/selinux`, 将配置项改为`SELINUX=disabled`, 然后重启系统永久生效**  
+同样可以测试**登录用户`shell`为 `/sbin/nologin`的账号**一样是**无法登录的**  
+### 2.6.3 只能上传文件的账号
+#### 2.6.3.1 创建账号
+```shell
+# 创建账号 up , 限制该账号只能上传文件，不能切换出给其指定的根目录， 因此不要把该账号加入到 chroot_list 中去
+useradd up -d /data/upload -s /bin/bash
+# 修改目录权限
+chmod a+rx /data/upload/
+# 修改账号密码
+passwd up
+```
+#### 2.6.3.2 配置账号
+
+**默认情况下，vsftpd 会使用`/etc/pam.d/vsftpd`文件，该文件默认要求`ftp`用户的`shell`是`/etc/shell`文件中列出的`shell`之一且`ftp`用户没有在`/etc/vsftpd/ftpusers`中, 最好将`SELINUX`禁用掉，如果想要系统更安全，应该学会如何使用`SELINUX`而不是禁用掉它~**
 ![image](https://img9.doubanio.com/view/photo/l/public/p2554525534.webp "海蒂与爷爷")  
