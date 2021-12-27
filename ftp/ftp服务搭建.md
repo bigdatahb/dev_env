@@ -136,17 +136,37 @@ guest_username=vsftpd
 # 配置虚拟账号和本地账号具有相同权限
 virtual_use_local_privs=YES
 # 用户配置目录
-user_config_dir=/etc/vsftpd/ftplogin
+user_config_dir=/etc/vsftpd/user_conf
 allow_writeable_chroot=YES
 ```
-## 2.2 创建虚拟账号
+
+## 2.2 防火墙设置
+**在简易版配置中，我们在防火墙里添加了ftp服务就行了，但是在精修版中，我们使用的是被动模式，且对连接端口和数据传输端口进行了限制，因此需要将对应端口添加进防火墙规则**
+
+查看`ftp`服务信息:
+![ftp-service](resources/imgs/5.png "firewall service-info: ftp")
+由`ftp`服务信息可知，光将ftp服务加入防火墙规则是没用的，除非将防火墙的服务信息改掉`/etc/firewalld/services/service.xml`和`/etc/firewalld/zones/public.xml`  
+还是直接添加端口方便一些:  
+```shell
+# 添加ftp连接端口
+firewall-cmd --zone=public --add-port=1369/tcp --permanent
+# 添加ftp数据传输端口
+firewall-cmd --zone=public --add-port=50000-51000/tcp --permanent 
+# 刷新规则
+firewall-cmd --reload
+# 查看端口
+firewall-cmd --list-ports
+```
+![add ftp ports](resources/imgs/6.png "add ports of ftp")
+
+## 2.3 创建虚拟账号
 在上述配置文件 `vsftpd.conf`中配置的虚拟账号是`vsftpd`，因此在启动`vsftpd`服务前，我们需要事先创建该账号
 ```shell
 useradd vsftpd -d /home/vsftpd -s /sbin/nologin
 ```
-## 2.3 PAM配置
+## 2.4 PAM配置(实验了一下，好像不做这个配置也没啥问题，只要/etc/pam.d/ 下有 vsftpd 这个文件就行)
 **在配置文件中指定了配置项`pam_service_name=/etc/pam.d/vsftpd`，对登录用户需要进行PAM认证**
-### 2.3.1 创建虚拟用户数据库
+### 2.4.1 创建虚拟用户数据库
 ```shell
 # 先创建文件 /etc/vsftpd/login.txt，并在文件中加入登录用户信息，奇数行为用户名，偶数行为用户密码，创建好后使用如下命令生成虚拟数据库文件 /etc/vsftpd/login.db
 db_load -T -t hash -f /etc/vsftpd/login.txt /etc/vsftpd/login.db
@@ -155,14 +175,50 @@ chmod 600 /etc/vsftpd/login.db
 # 数据库文件生成后，为安全起见，可以将 login.txt 删除
 rm -f /etc/vsftpd/login.txt
 ```
-### 2.3.2 修改/etc/pam.d/vsftpd 配置
+### 2.4.2 修改/etc/pam.d/vsftpd 配置
 在文件`/etc/pam.d/vsftpd`中加入如下内容：
 ```shell
 auth    required        pam_userdb.so db=/etc/vsftpd/login
 account required        pam_userdb.so db=/etc/vsftpd/login
 ```
-## 2.4 启动vsftpd服务
+## 2.5 启动vsftpd服务
 ```shell
 systemctl start vsftpd.service
 ```
+## 2.6 测试不同配置下的账号登录
+### 2.6.1 测试 chroot_list 
+```shell
+# 创建账号 lisimeng
+useradd lisimeng -d /home/lisimeng -s /bin/bash
+```
+**此时登录会出现 `500 OOPS: chroot` 错误**，因为并没有指定用户`lisimeng`的`local_root`选项，该选项默认值为`none`，可以`man vsftpd.conf` 查看
+![chroot error](resources/imgs/7.png "500 OOPS: chroot")
+在`user_config_dir`配置的目录`/etc/vsftpd/user_conf`下添加配置文件 `lisimeng`，内容如下：
+```properties
+local_root=/home/lisimeng
+```
+**此时去连接`ftp`仍会报错，因为虚拟用户`vsftpd`对目录`/home/lisimeng`没有读权限**
+![chroot error](resources/imgs/8.png "500 OOPS: cannot change directory:/home/lisimeng")
+查看`/home/lisimeng`目录权限:
+![image](resources/imgs/9.png "ls -l /home")
+```shell
+# 查看用户 lisimeng 的组信息
+id lisimeng
+# 将用户 lisimeng 的组修改为 vsftpd 组
+usermod -g vsftpd lisimeng
+# 修改目录 /home/lisimeng 的权限，对组用户添加读和执行权限
+chmod g+rx /home/lisimeng
+```
+修改用户 `lisimeng` 的组信息和其家目录权限后：
+![image](resources/imgs/9.png "after usermod")
+**此时再进行`ftp`连接就没有问题了：**
+![image](resources/img/10.png "ftp connection")
+**观察发现，我们配置的目录明明是 `/home/lisimeng` , 但是执行`pwd`时显示的却是`/`，为确认确实是在目录`/home/lisimeng`下，可以在该目录下创建一个文件，然后再执行`ls`命令** 
+**至于为何会出现上述情况，是因为`chroot_list`配置文件, 因为用户`lisimeng`并没有加入`chroot_list`文件，因此其是没有离开`local_root`所指定目录的权限的.**
+**如下图所示，即使`lisimeng`对目录`/data/lisimeng`具有完全权限，但是也不能切换过去：**
+![image](resources/imgs/11.png "change directory")
+**配置`chroot_list`文件，将`lisimeng`加入进去，一个用户名占用一行，再连接`ftp`，这次就可以切换目录啦,并且首次登录进入的目录也能正确显示：**
+![image](resouces/imgs/12.png "chroot_list")
+
+**默认情况下，vsftpd 会使用`/etc/pam.d/vsftpd`文件，该文件默认要求`ftp`用户的`shell`是`/etc/shell`文件中列出的`shell`之一且`ftp`用户没有在`/etc/vsftpd/ftpusers`中**
 ![image](https://img9.doubanio.com/view/photo/l/public/p2554525534.webp "海蒂与爷爷")  
