@@ -23,7 +23,7 @@ pasv_max_port=6100
 ### 1.2 修改防火墙规则
 因为 `ftp` 服务在进行`TCP`连接时，需要用到端口，因此要想正常连接和传输数据，需要将对应的端口打开
 **在防火墙里添加服务规则有2种方式: a) 直接将服务添加进防火墙规则分区 b)将服务的指定端口协议加入防火墙**  
-**任选一种配置都可以是ftp能够正常连接** 
+**任选一种配置都可以使ftp能够正常连接** 
 #### 1.2.1 防火墙命令简介
 `RHEL7` 系统开始使用命令 `firewall-cmd`对防火墙进行配置，若是`RHEL6`或更早期版本，需要查阅 `iptables`命令
 `firewall-cmd`常用命令：
@@ -84,12 +84,13 @@ systemctl restart vsftpd.service
 当服务正常启动后就可以通过客户端进行连接了：  
 
 **Windows 进行ftp连接:**
-![windows](resources/imgs/3.png "windows 连接ftp服务")
+![windows](resources/imgs/3.png "windows 连接ftp服务")  
 
 **其他Linux机器连接ftp服务：**  
-![Linux](resources/imgs/4.png "linux 连接ftp服务")
+![Linux](resources/imgs/4.png "linux 连接ftp服务")  
 
-**注意：如果只是想简单使用`ftp`服务，而不怎么在意安全问题，那么简易版就行了，但是若想使用更安全的ftp服务或者更精细化的控制用户权限，比如只允许上传或者只允许下载等，可以细化配置。下面要介绍的精修版就是精细控制的一个例子**
+上述连接时的欢迎语是因为我在登录用户的主目录下创建了一个`.message`文件，并在文件中加入了欢迎语内容: `welcome to Bo's ftp!`  
+**注意：如果只是想简单使用`ftp`服务，而不怎么在意安全问题，那么简易版就行了，但是若想使用更安全的ftp服务或者更精细化的控制用户权限，比如只允许上传或者只允许下载等，可以细化配置。下面要介绍的精修版可以很好的控制各种权限**
 
 ## 2. 精修版
 ### 2.1 修改配置文件 vsftpd.conf
@@ -164,11 +165,10 @@ firewall-cmd --list-ports
 ```shell
 useradd vsftpd -d /home/vsftpd -s /sbin/nologin
 ```
-## 2.4 PAM配置(实验了一下，好像不做这个配置也没啥问题，只要/etc/pam.d/ 下有 vsftpd 这个文件就行)
-**在配置文件中指定了配置项`pam_service_name=/etc/pam.d/vsftpd`，对登录用户需要进行PAM认证**
+## 2.4 PAM配置
 ### 2.4.1 创建虚拟用户数据库
 ```shell
-# 先创建文件 /etc/vsftpd/login.txt，并在文件中加入登录用户信息，奇数行为用户名，偶数行为用户密码，创建好后使用如下命令生成虚拟数据库文件 /etc/vsftpd/login.db
+# 先创建文件 /etc/vsftpd/login.txt，并在文件中加入虚拟用户信息，奇数行为用户名，偶数行为用户密码，创建好后使用如下命令生成虚拟用户数据库文件 /etc/vsftpd/login.db
 db_load -T -t hash -f /etc/vsftpd/login.txt /etc/vsftpd/login.db
 # 修改权限
 chmod 600 /etc/vsftpd/login.db
@@ -176,19 +176,42 @@ chmod 600 /etc/vsftpd/login.db
 rm -f /etc/vsftpd/login.txt
 ```
 ### 2.4.2 修改/etc/pam.d/vsftpd 配置
-在文件`/etc/pam.d/vsftpd`中加入如下内容：
+在文件`/etc/pam.d/vsftpd`中加入如下内容并注释掉其他内容：
 ```shell
 auth    required        pam_userdb.so db=/etc/vsftpd/login
 account required        pam_userdb.so db=/etc/vsftpd/login
 ```
-## 2.5 启动vsftpd服务
+## 2.5 SELINUX 配置
+临时关闭 SELINUX 功能
+```shell
+# 临时将 SELINUX 的值改为 permissive
+setenforce 0
+# 查看 SELINUX 的值
+getenforce
+```
+永久关闭 SELINUX 功能， 需重启操作系统
+```shell
+# 打开配置文件 /etc/sysconfig/selinux , 修改配置项 SELINUX 为如下 ， 修改完成需要重启操作系统
+SELINUX=disabled
+```
+## 2.6 启动vsftpd服务
 ```shell
 systemctl start vsftpd.service
 ```
-## 2.6 测试不同配置下的账号登录
-### 2.6.1 测试 chroot_list 
+## 2.7 测试不同配置下的账号登录
+### 2.7.1 先创建几个虚拟账号
 ```shell
-# 创建账号 lisimeng
+# 打开文件 /etc/vsftpd/login.txt ， 并加入如下两个账号信息， up 账号用作只能上传文件的测试，down账号用于只能下载文件的测试
+up
+up123
+down
+down123
+# 执行下面的命令，重新生成虚拟数据库
+db_load -T -t hash -f /etc/vsftpd/login.txt /etc/vsftpd/login.db
+```
+### 2.7.2 测试 chroot_list 
+```shell
+# 创建本地账号 lisimeng
 useradd lisimeng -d /home/lisimeng -s /bin/bash
 ```
 **此时登录会出现 `500 OOPS: chroot` 错误**，因为并没有指定用户`lisimeng`的`local_root`选项，该选项默认值为`none`，可以`man vsftpd.conf` 查看
@@ -220,7 +243,7 @@ chmod g+rx /home/lisimeng
 **配置`chroot_list`文件，将`lisimeng`加入进去，一个用户名占用一行，再连接`ftp`，这次就可以切换目录啦,并且首次登录进入的目录也能正确显示：**
 ![image](resources/imgs/12.png "chroot_list")
 
-### 2.6.2 测试shell不在/etc/shells中的用户
+### 2.7.3 测试shell不在/etc/shells中的用户
 安装一个机器上没有的shell , tcsh， 如果机器上有除了 sh , bash 之外的其他shell，不用安装也行，其他的shell还有很多：ksh, zsh, ash 等
 ![image](resources/imgs/13.png "install tcsh")
 ```shell
@@ -229,21 +252,46 @@ useradd ftp1 -d /home/ftp1 -s /bin/tcsh
 # 查看 /etc/shells 文件，发现文件中多了两行: /bin/tcsh 和 /bin/csh, 我们注释掉 /bin/tcsh ， 即在这一行前面加上一个 '#' , 然后用 ftp1这个用户去连接ftp服务器
 ```
 ![login_error](resources/imgs/14.png "login incorrect")
-**去掉`/etc/shells`文件中的注释, 即放开 `/bin/tcsh` 这一行, 再进行`ftp`登录**
-![login](resources/imgs/15.png "ftp1 login success")
+**去掉`/etc/shells`文件中的注释, 即放开 `/bin/tcsh` 这一行, 再进行`ftp`登录**  
+![login](resources/imgs/15.png "ftp1 login success")  
 **可以发现将`ftp1`的登录`shell`加入到`/etc/shells`文件中之后，便可以正常登录了，这里`ls`命令还有问题(出现错误：226 Transfer done (but failed to open directory).)是因为 `SELINUX` 处于开启状态, 可以使用通过命令`setenforce 0`来临时关闭`SELINUX`或者修改文件`/etc/sysconfig/selinux`, 将配置项改为`SELINUX=disabled`, 然后重启系统永久生效**  
 同样可以测试**登录用户`shell`为 `/sbin/nologin`的账号**一样是**无法登录的**  
-### 2.6.3 只能上传文件的账号
-#### 2.6.3.1 创建账号
+### 2.7.4 只能上传文件的账号
+**配置账号 up , 限制该账号只能上传文件，不能切换出给其指定的根目录， 因此不要把该账号加入到 chroot_list 中去**  
+在虚拟用户配置目录 /etc/vsftpd/user_conf 下创建虚拟用户同名文件 up , 并在文件中加入如下内容:
 ```shell
-# 创建账号 up , 限制该账号只能上传文件，不能切换出给其指定的根目录， 因此不要把该账号加入到 chroot_list 中去
-useradd up -d /data/upload -s /bin/bash
-# 修改目录权限
-chmod a+rx /data/upload/
-# 修改账号密码
-passwd up
+# 账号登录成功时的家目录，得事先创建好
+local_root=/data/upload
+# 允许写(全局)
+write_enable=YES
+# 关闭下载功能
+download_enable=NO
 ```
-#### 2.6.3.2 配置账号
-
-**默认情况下，vsftpd 会使用`/etc/pam.d/vsftpd`文件，该文件默认要求`ftp`用户的`shell`是`/etc/shell`文件中列出的`shell`之一且`ftp`用户没有在`/etc/vsftpd/ftpusers`中, 最好将`SELINUX`禁用掉，如果想要系统更安全，应该学会如何使用`SELINUX`而不是禁用掉它~**
+创建目录 `/data/upload`
+```shell
+mkdir /data/upload
+# 更改目录归属
+chown -R vsftpd. /data/upload
+```
+测试连接：  
+![image](resources/imgs/16.png "测试只能上传不能下载的账号")
+### 2.7.5 只能下载不能上传的账号
+**配置账号down, 限制该账号只能下载文件，且不能切出其家目录**  
+在虚拟用户配置目录 /etc/vsftpd/user_conf 下创建虚拟用户同名文件 down , 并在文件中加入如下内容:
+```shell
+# 账号登录成功时的家目录，得事先创建好
+local_root=/data/download
+# 不允许写(全局)
+write_enable=NO
+# 开启下载功能
+download_enable=YES
+```
+创建目录 `/data/download`
+```shell
+mkdir /data/download
+# 更改目录归属
+chown -R vsftpd. /data/download
+```
+测试连接：  
+![down](resources/imgs/17.png "测试只能下载不能上传的账号")  
 ![image](https://img9.doubanio.com/view/photo/l/public/p2554525534.webp "海蒂与爷爷")  
