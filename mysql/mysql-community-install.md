@@ -160,8 +160,8 @@ firewall-cmd --reload
 -- 查询
 firewall-cmd --list-ports
 ```
-**注意: mysql 8 如果启用sHA密码认证，密码在传输过程中使用TLS协议保护,若没有提供rsa公钥文件，连接的时候可能会报错 'Public Key Retrieval is not allowed'**  
-- 解决方式
+**注意: mysql 8 如果启用SHA密码认证，密码在传输过程中必须使用TLS协议保护,若没有提供RSA公钥文件，连接的时候可能会报 'Public Key Retrieval is not allowed' 的错误**  
+- 解决方式(建议使用b)  
 a. 修改连接属性，将`allowPublicKeyRetrieval`属性设置为 `TRUE`，为防止恶意代理通过MITM攻击获取到明文密码，该属性默认是 FALSE   
 ![image](resources/imgs/3-5.png "开启")  
 b. 指定公钥文件(奇怪的是这里只需要指定文件且文件存在即可，置于文件内容好像无关紧要？？有时间再仔细研究)  
