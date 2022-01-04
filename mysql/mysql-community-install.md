@@ -68,15 +68,60 @@ ln -s /opt/software/mysql/mysql-8.0.27-el7-x86_64 /usr/local/mysql
 # 查看 /etc/profile 脚本会发现，在执行/etc/profile脚本时会扫描并执行/etc/profile.d/目录下的所有.sh文件
 export PATH=$PATH:/usr/local/mysql/bin
 ```
+### 3.3. 配置
+- 创建数据目录
+```shell
+mkdir /data/mysql
+# 修改目录归属
+chown -R mysql. /data/mysql
+# 修改目录权限
+chmod 750 /data/mysql
+mkdir /data/mysql/mariadb
+chown -R mysql:mysql mariadb
+```
+- 修改配置文件
+```config
+# 修改 /etc/my.conf
+[mysqld]
+basedir=/usr/local/mysql
+datadir=/data/mysql
+socket=/data/mysql/mysql.sock
+port=3306
+[mysqld_safe]
+log-error=/data/mysql/mariadb/mariadb.log
+pid-file=/data/mysql/mariadb/mariadb.pid
+# 修改 /usr/local/mysql/support-files/mysql.server
+basedir=/usr/local/mysql
+datadir=/data/mysql
+```
+- 初始化数据目录
+```shell
+cd /usr/local/mysql
+bin/mysqld --initialize --user=mysql
+mkdir /data/mysql/mariadb
+touch /data/mysql/mariadb/mariadb.log
+touch /data/mysql/mariadb/mariadb.pid
+chown -R mysql:mysql /data/mysql/mariadb
+```
+![image](resources/imgs/3-2.png "初始化数据目录")  
+- 创建ssl/rsa文件  
+```shell
+bin/mysql_ssl_rsa_setup
+```
+### 3.4. 启动服务
 - 添加mysql服务
 ```shell
 cd /usr/local/mysql
 cp support-files/mysql.server /etc/init.d/mysql.server
 ```
-### 3.3. 配置
-- 创建数据目录
+- 启动服务
 ```shell
-mkdir /data/mysql
-# 修改目录权限
-chmod 750 /data/mysql
+mysqld_safe --user=mysql &
 ```
+- 连接服务
+```shell
+# 密码是初始化数据目录时的临时密码, -h 指定为 127.0.0.1 不要指定为 localhost 或者使用缺省值(localhost)
+mysql -h 127.0.0.1 -u root -p
+```
+![image](resources/imgs/3-3.png "连接mysql服务")  
+
