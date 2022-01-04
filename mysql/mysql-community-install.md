@@ -118,10 +118,16 @@ cp support-files/mysql.server /etc/init.d/mysql.server
 ```shell
 mysqld_safe --user=mysql &
 ```
-- 连接服务
+### 3.5. 连接服务
 ```shell
 # 密码是初始化数据目录时的临时密码, -h 指定为 127.0.0.1 不要指定为 localhost 或者使用缺省值(localhost)
 mysql -h 127.0.0.1 -u root -p
 ```
 ![image](resources/imgs/3-3.png "连接mysql服务")  
+```shell
+# 修改密码
+alter user 'root'@'localhost' identified by 'admin123';
+```
+![image](resources/imgs/3-4.png "修改密码")  
+
 
