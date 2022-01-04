@@ -129,5 +129,40 @@ mysql -h 127.0.0.1 -u root -p
 alter user 'root'@'localhost' identified by 'admin123';
 ```
 ![image](resources/imgs/3-4.png "修改密码")  
-
-
+### 3.6. 远程连接
+- 创建远程连接用户  
+```sql
+-- @'%'表示任意ip都可用, 若不指定@信息则默认为 @'%'
+-- 亦可指定具体ip, 如 'huangbo'@'172.16.116.111' 表示只有在ip为'172.16.116.111'的机器上才能使用账号huangbo进行连接
+create user 'huangbo'@'%' identified by '123456';
+```
+- 给用户授权
+```sql
+-- 授予所有权限
+grant all privileges on *.* to 'huangbo';
+-- 对某个数据库赋予所有权限(示例为 test 数据库),亦可指定某张具体的表
+grant all privileges on test.* to 'huangbo'@'%';
+-- 刷新权限
+flush privileges;
+--------------- 权限说明 ----------------
+-- all privileges : 所有权限
+-- select : 读权限 
+-- delete : 删除权限
+-- update : 更新权限
+-- create : 创建权限
+-- drop : 删除权限
+```
+- 在防火墙规则里添加连接端口
+```shell
+firewall-cmd --zone=public --add-port=3306/tcp --permanent
+-- 刷新
+firewall-cmd --reload
+-- 查询
+firewall-cmd --list-ports
+```
+**注意: mysql 8 如果启用sHA密码认证，密码在传输过程中使用TLS协议保护,若没有提供rsa公钥文件，连接的时候可能会报错 'Public Key Retrieval is not allowed'**  
+- 解决方式
+a. 修改连接属性，将`allowPublicKeyRetrieval`属性设置为 `TRUE`，为防止恶意代理通过MITM攻击获取到明文密码，该属性默认是 FALSE   
+![image](resources/imgs/3-5.png "开启")  
+b. 指定公钥文件(奇怪的是这里只需要指定文件且文件存在即可，置于文件内容好像无关紧要？？有时间再仔细研究)  
+![image](resources/imgs/3-6.png "指定公钥")  
