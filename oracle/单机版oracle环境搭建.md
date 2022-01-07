@@ -24,6 +24,7 @@
 选择要创建的数据库类型：  
 ![image](resources/imgs/2-8.png "step 7: 数据库类型")  
 数据库标识符设置，若不想要容器数据库可将“创建为容器数据库”选项的`√`取消掉  
+**注意：容器数据库和传统的oracle数据库使用上差别很大，若无 pdb 数据库使用经验，请不要使用可拔插数据库**
 ![image](resources/imgs/2-9.png "step 8: SID")  
 内存分配，使用默认值即可，若机器内存较小，可手动配置一个合理的值  
 ![image](resources/imgs/2-10.png "step 9: 内存分配")  
@@ -198,9 +199,21 @@ ORDER BY 4 DESC
 ; 
 -- 给表空间添加数据文件, 这里添加了约 30GB 的表空间数据文件
 ALTER TABLESPACE USERS ADD datafile 'D:\software\app\huangbo\oradata\ORCL\USERS02.DBF' SIZE 30720M;
+
+-- 创建数据目录
+CREATE OR REPLACE directory data_dir AS 'D:\data\oracle';
+-- 查询目录信息
+SELECT * FROM dba_directories;
+-- 若目录需要给其他用户使用，还需要对目录给指定用户授权
+GRANT READ,WRITE ON directory data_dir TO HUANGBO;
 ```  
+- 数据导入
+对于 dmp 文件的导入，有两种情况:
+1. dmp文件是使用 exp 命令导出的， 这个时候需要使用 imp 命令进行导入
+2. dmp文件是使用 expdp 命令导出的，这个时候需要使用 impdp 命令进行导入, impdp和expdp 命令必须在数据目录下进行操作
+**<oracle就是麻烦，不可否认很难用，虽然各种问题都有成熟的解决方案，但是太麻烦了>**
 
 # Linux 安装 oracle
 ## 1. 下载并解压安装包
-
+**本来想写的，但是使用了一下oracle后，又放弃了，不到万不得已是不会选择oracle的，等什么时候实在闲的无聊的时候再补上吧**  
 
