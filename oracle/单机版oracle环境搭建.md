@@ -107,6 +107,7 @@ ORCLPDB =
 ![image](resources/imgs/3-21.png "修改 tnsnames.ora")  
 
 - 启动监听  
+**注意需要管理员身份运行cmd执行该命令**  
 ```cmd
 lsnrctl start
 ```  
