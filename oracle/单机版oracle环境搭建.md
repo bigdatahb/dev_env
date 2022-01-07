@@ -58,12 +58,12 @@ lsnrctl status
 sqlplus "/as sysdba"
 ```
 ![image](resources/imgs/3-3.png "sqlplus 以sysdba登录")  
-- 关闭数据库
+- 关闭数据库  
 ```sql
 shutdown immediate
 ```
 ![image](resources/imgs/3-18.png "关闭数据库")  
-- 关闭监听
+- 关闭监听  
 ```cmd
 lsnrctl stop
 ```  
@@ -106,12 +106,12 @@ ORCLPDB =
 ```
 ![image](resources/imgs/3-21.png "修改 tnsnames.ora")  
 
-- 启动监听
+- 启动监听  
 ```cmd
 lsnrctl start
 ```  
 ![image](resources/imgs/3-22.png "启动监听")  
-- 启动数据库
+- 启动数据库  
 ```sql
 # 以 syddba 身份连接数据库
 sqlplus /nolog
@@ -120,12 +120,12 @@ conn /as sysdba
 startup
 ```  
 ![image](resources/imgs/3-23.png "启动数据库")  
-- 查看 pdb 数据库
+- 查看 pdb 数据库  
 ```sql
 show pdbs;
 ```
 ![image](resources/imgs/3-24.png "查看 pdbs")  
-- 开启 pdb 数据库
+- 开启 pdb 数据库  
 ```sql
 -- 发现 pdb 数据库 orclpdb 状态是 MOUNTED , 将其打开
 alter pluggable database orclpdb open;
@@ -150,14 +150,14 @@ show con_name;
 create user huangbo identified by 123456;
 ```  
 ![image](resources/imgs/3-5.png "切换pdb并创建用户")  
-- 给用户授权
+- 给用户授权  
 ```sql
 grant connect,resource,dba to huangbo;
 ```
-- 用新建用户连接数据库  
+- 用新建用户连接数据库    
 ![image](resources/imgs/3-6.png "使用dbeaver连接oracle")  
 
-- sqlplus 直连数据库
+- sqlplus 直连数据库  
 ```cmd
 sqlplus huangbo/123456@orclpdb
 ```
@@ -207,7 +207,7 @@ SELECT * FROM dba_directories;
 -- 若目录需要给其他用户使用，还需要对目录给指定用户授权
 GRANT READ,WRITE ON directory data_dir TO HUANGBO;
 ```  
-- 数据导入
+- 数据导入  
 对于 dmp 文件的导入，有两种情况:
 1. dmp文件是使用 exp 命令导出的， 这个时候需要使用 imp 命令进行导入
 2. dmp文件是使用 expdp 命令导出的，这个时候需要使用 impdp 命令进行导入, impdp和expdp 命令必须在数据目录下进行操作
