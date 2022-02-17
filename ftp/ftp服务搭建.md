@@ -235,7 +235,7 @@ chmod g+rx /home/lisimeng
 修改用户 `lisimeng` 的组信息和其家目录权限后：
 ![image](resources/imgs/9.png "after usermod")
 **此时再进行`ftp`连接就没有问题了：**
-![image](resources/img/10.png "ftp connection")
+![image](resources/imgs/10.png "ftp connection")
 **观察发现，我们配置的目录明明是 `/home/lisimeng` , 但是执行`pwd`时显示的却是`/`，为确认确实是在目录`/home/lisimeng`下，可以在该目录下创建一个文件，然后再执行`ls`命令** 
 **至于为何会出现上述情况，是因为`chroot_list`配置文件, 因为用户`lisimeng`并没有加入`chroot_list`文件，因此其是没有离开`local_root`所指定目录的权限的.**
 **如下图所示，即使`lisimeng`对目录`/data/lisimeng`具有完全权限，但是也不能切换过去：**
