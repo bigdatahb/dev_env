@@ -1,4 +1,6 @@
 # CUDA 安装
+CUDA是NVIDIA设计的一个并行计算引擎，它提供了通用的编程模型，为C/C++开发者构建基于GPU加速的应用程序提供了环境。
+CDUA Toolkit包含了GPU加速库、调试和代码优化工具、C/C++编译器和发布应用程序的运行时库
 ## 下载安装包
 首先打开计算机中的 NVIDIA 控制面板，点开左下角的 `系统设置` , 查看组件信息
 ![image]('resources/imgs/cuda-01.png', "NVIDIA systemInfo")
@@ -27,4 +29,10 @@
 ![image]("resources/imgs/cuda-10.png", "test")
 
 
+# CUDNN 安装
+CUDNN(CUDA Deep Neural Network)是NVIDIA设计的用于深度神经网络学习的GPU加速库
+[CUDNN下载]("https://developer.nvidia.com/rdp/cudnn-archive#a-collapse742-10")
+选择相对应版本的进行下载即可
+![image]("resources/imgs/cuda-11.png", "下载CUDNN安装包")
+下载完成后解压缩，将解压后的文件复制到 CUDA 的安装目录下去(CUDNN就是一个关于深度神经网络的CUDA补丁)
 
