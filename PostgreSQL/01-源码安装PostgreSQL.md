@@ -1,5 +1,6 @@
 # 下载源码安装包
 进入[PostgreSQL官网](https://www.postgresql.org/), 选择`download`  
+
 ![image](resources/imgs/pg-01.png)
 ![image](resources/imgs/pg-02.png)
 
@@ -35,6 +36,7 @@ sudo apt install libreadline-dev
 
 ## configure 
 如果出现 `creating makefile` 字样，则说明 configure 成功啦  
+ 
 ![image](resources/imgs/pg-03.png "./configure")    
 
 ## make & make install 
@@ -45,6 +47,7 @@ make install 会在 `/usr/local` 下面创建 `pgsql` 文件夹, 因此需要 ro
 # 初始化、启动数据库
 ## 创建用户 postgres 
 `sudo adduser postgres`
+
 ![image](resources/imgs/pg-04.png "创建用户 postgres")  
 
 ## 创建 data 目录, 并更改目录归属
@@ -56,10 +59,12 @@ make install 会在 `/usr/local` 下面创建 `pgsql` 文件夹, 因此需要 ro
 
 ## 初始化数据库
 `/usr/local/pgsql/bin/initdb -D /usr/local/pgsql/data/`  
+
 ![image](resources/imgs/pg-05.png "初始化数据库")
 
 ## 启动数据库
 `/usr/local/pgsql/bin/pg_ctl -D /usr/local/pgsql/data/ -l logfile start`  
+
 ![image](resources/imgs/pg-06.png "启动数据库")
 
 ## 创建数据库 test
@@ -69,6 +74,7 @@ make install 会在 `/usr/local` 下面创建 `pgsql` 文件夹, 因此需要 ro
 连接数据库 test  
 `/usr/local/pgsql/bin/psql test`  
 修改密码  
+
 ![image](resources/imgs/pg-07.png "修改postgres的密码")
 
 
@@ -100,6 +106,7 @@ listen_addresses = '*'
 
 
 使用 dbeaver 进行远程连接  
+
 ![image](resources/imgs/pg-08.png "远程连接")
 
 
