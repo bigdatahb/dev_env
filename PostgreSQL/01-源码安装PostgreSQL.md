@@ -41,7 +41,7 @@ sudo apt install libreadline-dev
 
 ## make & make install 
 make install 会在 `/usr/local` 下面创建 `pgsql` 文件夹, 因此需要 root 权限  
-`sudo make & make install`
+`sudo make & sudo make install`
 
 
 # 初始化、启动数据库
@@ -51,7 +51,7 @@ make install 会在 `/usr/local` 下面创建 `pgsql` 文件夹, 因此需要 ro
 ![image](resources/imgs/pg-04.png "创建用户 postgres")  
 
 ## 创建 data 目录, 并更改目录归属
-`sudo mkdir /usr/local/pgsql/data`
+`sudo mkdir /usr/local/pgsql/data`  
 `sudo chown -R postgres. /usr/local/pgsql/data`  
 
 ## 切换至 postgres 用户
@@ -108,6 +108,90 @@ listen_addresses = '*'
 使用 dbeaver 进行远程连接  
 
 ![image](resources/imgs/pg-08.png "远程连接")
+
+
+# 设置开机启动
+## Ubuntu 22.04 设置开机启动  
+设置开机启动的方式：  
+>可以直接在 `/etc/systemd/system` 目录下编写服务启动脚本, 然后通过 `systemctl` 命令启动服务    
+>先开启系统的`rc-local.service`服务，然后通过创建`/etc/rc.local`文件来设置开机启动服务  
+
+**rc-local.service** 是系统自带的一个开机服务，但是在 Ubuntu 22.04 版本下默认没有开启  
+### 开启 rc-local.service 
+修改 /lib/systemd/system/rc-local.service 文件  
+```shell
+#  SPDX-License-Identifier: LGPL-2.1-or-later
+#
+#  This file is part of systemd.
+#
+#  systemd is free software; you can redistribute it and/or modify it
+#  under the terms of the GNU Lesser General Public License as published by
+#  the Free Software Foundation; either version 2.1 of the License, or
+#  (at your option) any later version.
+
+# This unit gets pulled automatically into multi-user.target by
+# systemd-rc-local-generator if /etc/rc.local is executable.
+[Unit]
+Description=/etc/rc.local Compatibility
+Documentation=man:systemd-rc-local-generator(8)
+ConditionFileIsExecutable=/etc/rc.local
+After=network.target
+
+[Service]
+Type=forking
+ExecStart=/etc/rc.local start
+TimeoutSec=0
+RemainAfterExit=yes
+GuessMainPID=no
+
+# 添加Install, 注意首字母一定要大写
+[Install]
+WantedBy=multi-user.target
+Alias=rc-local.service
+
+```  
+
+### 新增 /etc/rc.local 文件  
+系统默认是没有 **/etc/rc.local** 文件的, 需要自己手动创建  
+```shell
+#!/bin/sh
+
+echo "----------- 开启手动配置的服务 -----------------" > /home/huangbo/service.log 
+
+# 设置 pgsql 开机启动
+su - postgres -c "sh /usr/local/pgsql/bin/start.sh"
+```  
+
+### 修改 /etc/rc.local 文件权限
+创建的文件默认没有执行权限，可以对所有用户加上执行权限  
+```shell
+chmod a+x /etc/rc.local
+```  
+### 启动 rc-local.service  
+```shell
+systemctl enable rc-local.service
+```  
+![image](resources/imgs/pg-09.png "启动rc-local.service")  
+
+**看服务启动信息，其实就是创建了两个软连接**  
+
+### 查看服务状态  
+```shell
+systemctl status rc-local.service
+```  
+![image](resources/imgs/pg-10.png "查看服务状态")  
+
+
+### 重启服务器，验证 /etc/rc.local 是否会被正确加载  
+启动好 rc-local.service 服务后，它就可以自动加载 /etc/rc.local 到开机启动服务里去了  
+`reboot`  
+
+我们在 /etc/rc.local 文件中加入了启动日志  
+![image](resources/imgs/pg-11.png "查看启动日志")  
+
+**以上，开启自动启动服务正常工作**  
+
+
 
 
 

@@ -4,11 +4,40 @@
 **ubuntu 安装完成，默认是不设置 root 用户的，在安装时设置的用户默认属于 sudo 用户，可以在终端使用`sudo passwd`来修改root密码，root密码每次登录都是随机的**  
 
 # vmware-tools 安装
-由于版本原因，不一定能安装 vmware-tools .  这有可能是系统中有 open-vm-tools 的原因, 若是这个原因导致 vm-tools 安装失败, 可以如下操作:  
+由于版本原因，不一定能安装 vmware-tools .    
+这是因为高版本的Ubuntu系统中自己带有 open-vm-tools 服务的原因, open-vm-tools 与 vmware-tools 冲突  
+
+![image](resources/imgs/ubuntu-05.png)  
+ 
+若是这个原因导致 vm-tools 安装失败, 可以如下操作:  
+open-vm-tools 和 vmware-tools 启动一个即可  
+
+**open-vm-tools 方案**  
 先卸载 open-vm-tools 和 open-vm-tools-desktop  
 `sudo apt-get remove open-vm-tools open-vm-tools-desktop`  
 再重新安装  
-`sudo apt-get install open-vm-tools open-vm-tools-desktop`  
+`sudo apt-get install open-vm-tools open-vm-tools-desktop`    
+启动服务  
+`systemctl start open-vm-tools.service`  
+设置开机自启动  
+`systemctl enable open-vm-tools.service`  
+查看 open-vm-tools 服务状态  
+`systemctl status open-vm-tools.service`  
+
+![image](resources/imgs/ubuntu-06.png)  
+
+**vmware-tools 方案**  
+禁用 vmware-tools  
+`systemctl disable vmtoolsd.service`  
+如果是禁用了 open-vm-tools, 要启用 vm-tools, 可按如下步骤:  
+启动 vmtoolsd.service  (安装vmware tools 就不必再来一遍了，因为是刚刚安装完毕)  
+`systemctl start vmtoolsd.service`  
+设置开机自启  
+`systemctl enable vmtoolsd.service`  
+查看 vm-tools 服务状态  
+`systemctl status vmtoolsd.service`
+
+
 
 # 替换镜像源
 先备份原始文件 `/etc/apt/source.list`  
@@ -83,9 +112,9 @@ systemctl start sshd
 # 查看防火墙状态
 sudo ufw status
 # 关闭防火墙
-sudo ufw stop 
+sudo ufw disable 
 # 开启防火墙
-sudo ufw start 
+sudo ufw enable 
 # 允许 ssh 通过防火墙
 sudo ufw allow ssh 
 ```
